@@ -1,0 +1,19 @@
+body {
+  font: 13px/1.5 -apple-system, sans-serif;
+  color: #1d1d1f;
+  background: #fff;
+  max-width: 640px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+h1 { font-size: 22px; }
+h2 { font-size: 16px; margin-top: 24px; }
+a { color: #0066cc; }
+kbd { font: inherit; }
+table { border-collapse: collapse; }
+td, th { text-align: left; padding: 4px 16px 4px 0; vertical-align: top; }
+nav { margin-bottom: 16px; }
+@media (prefers-color-scheme: dark) {
+  body { color: #f5f5f7; background: #1e1e1e; }
+  a { color: #4ea1ff; }
+}

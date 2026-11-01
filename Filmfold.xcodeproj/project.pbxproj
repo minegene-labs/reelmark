@@ -32,6 +32,7 @@
 			explicitFileTypes = {
 			};
 			explicitFolders = (
+				Filmfold.help,
 			);
 			path = Filmfold;
 			sourceTree = "<group>";
