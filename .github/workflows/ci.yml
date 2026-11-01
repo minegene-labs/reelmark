@@ -19,6 +19,7 @@ jobs:
       lint-paths: Reelmark Packages/ReelmarkCore
       linux: false
       xcodegen: false
+      macos-runner: xcode-27
 
   dependency-review:
     runs-on: ubuntu-latest

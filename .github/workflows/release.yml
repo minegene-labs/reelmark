@@ -16,6 +16,7 @@ jobs:
     with:
       scheme: Reelmark
       xcodegen: false
+      macos-runner: xcode-27
     permissions:
       contents: write
       id-token: write
