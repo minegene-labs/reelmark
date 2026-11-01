@@ -45,6 +45,8 @@ struct ItemList: NSViewRepresentable {
         // The table takes drops itself: SwiftUI's drop area around it doesn't
         // reach over an AppKit view, so drops on the list were refused.
         table.registerForDraggedTypes([.fileURL])
+        // Copy only, so a drag never moves a file out of the library or into the Trash.
+        table.setDraggingSourceOperationMask(.copy, forLocal: false)
         context.coordinator.table = table
 
         let scroll = NSScrollView()
@@ -210,6 +212,17 @@ struct ItemList: NSViewRepresentable {
             guard let table, event.type == .keyDown else { return false }
             table.keyDown(with: event)
             return true
+        }
+
+        // MARK: Dragging files out
+
+        /// A dragged row is its file, where it is now, so it can be dropped
+        /// into Finder or another app.
+        func tableView(
+            _ tableView: NSTableView, pasteboardWriterForRow row: Int
+        ) -> (any NSPasteboardWriting)? {
+            guard rows.indices.contains(row) else { return nil }
+            return parent.model.location(of: rows[row]) as NSURL
         }
 
         // MARK: Dropping files
