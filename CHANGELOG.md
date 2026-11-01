@@ -2,6 +2,13 @@
 
 All notable changes to Reelmark are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reelmark uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Each release's download, checksum and verification details are on the [Releases](https://github.com/MineGene/reelmark/releases) page.
 
+## [0.4.0](https://github.com/minegene-labs/reelmark/compare/v0.3.0...v0.4.0) (2026-11-01)
+
+
+### Features
+
+* let list columns be hidden and resized, and remembered ([#94](https://github.com/minegene-labs/reelmark/issues/94)) ([b8c91cd](https://github.com/minegene-labs/reelmark/commit/b8c91cdbf6860abe3d22097d324defa8f8448cfb)), closes [#63](https://github.com/minegene-labs/reelmark/issues/63)
+
 ## [0.3.0](https://github.com/minegene-labs/reelmark/compare/v0.2.0...v0.3.0) (2026-11-01)
 
 
