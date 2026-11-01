@@ -441,4 +441,37 @@ final class FilmfoldUITests: XCTestCase {
         XCTAssertTrue(eventually { ready.frame.minY < another.frame.minY }, "Not sorted Z to A")
         assertStillRunning(app)
     }
+
+    /// The header's right-click menu hides a column, and it stays hidden
+    /// after quitting. The test shows it again, since the choice is saved.
+    @MainActor
+    func testHeaderMenuHidesAColumnUntilShownAgain() {
+        var app = launch()
+        waitForItems(Self.all, in: app)
+        let match = app.buttons["Match"].firstMatch
+        XCTAssertTrue(match.waitForExistence(timeout: 10), "No Match column header")
+        toggleColumn("Match", in: app)
+        XCTAssertTrue(eventually { !match.exists }, "The Match column wasn't hidden")
+
+        app.terminate()
+        app = launch()
+        waitForItems(Self.all, in: app)
+        XCTAssertFalse(app.buttons["Match"].exists, "The hidden column came back after relaunch")
+
+        toggleColumn("Match", in: app)
+        XCTAssertTrue(
+            app.buttons["Match"].waitForExistence(timeout: 10), "The Match column wasn't shown again")
+        assertStillRunning(app)
+    }
+
+    /// Right-clicks the Downloaded File header (headers report themselves as
+    /// not hittable, so it clicks their middle) and chooses `column`.
+    @MainActor
+    private func toggleColumn(_ column: String, in app: XCUIApplication) {
+        app.buttons["Downloaded File"].firstMatch
+            .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
+        let item = app.menuItems[column]
+        XCTAssertTrue(item.waitForExistence(timeout: 10), "No \(column) in the header menu")
+        item.click()
+    }
 }

@@ -37,11 +37,18 @@ struct ItemList: NSViewRepresentable {
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         table.setAccessibilityLabel("Files to rename")
         for column in Column.allCases { table.addTableColumn(column.tableColumn) }
+        // Widths, order and hidden columns are kept between launches.
+        table.autosaveName = "ItemList"
+        table.autosaveTableColumns = true
         table.dataSource = context.coordinator
         table.delegate = context.coordinator
         let menu = NSMenu()
         menu.delegate = context.coordinator
         table.menu = menu
+        let headerMenu = NSMenu()
+        headerMenu.autoenablesItems = false
+        headerMenu.delegate = context.coordinator
+        table.headerView?.menu = headerMenu
         // The table takes drops itself: SwiftUI's drop area around it doesn't
         // reach over an AppKit view, so drops on the list were refused.
         table.registerForDraggedTypes([.fileURL])
@@ -72,14 +79,12 @@ struct ItemList: NSViewRepresentable {
             // Clicking the header sorts A to Z, clicking again Z to A.
             column.sortDescriptorPrototype = NSSortDescriptor(key: rawValue, ascending: true)
             switch self {
-            case .file: column.title = "Downloaded File"
-            case .match: column.title = "Match"
-            case .newName: column.title = "New Name"
+            case .file, .match, .newName: column.title = name
             case .status:
                 column.title = ""
                 // No title fits in so narrow a column, but VoiceOver still names it.
-                column.headerCell.setAccessibilityLabel("Status")
-                column.headerToolTip = "Status"
+                column.headerCell.setAccessibilityLabel(name)
+                column.headerToolTip = name
                 column.width = 24
                 column.resizingMask = []
                 return column
@@ -87,6 +92,16 @@ struct ItemList: NSViewRepresentable {
             column.width = 240
             column.minWidth = 80
             return column
+        }
+
+        /// The name in the header's show-and-hide menu.
+        var name: String {
+            switch self {
+            case .file: "Downloaded File"
+            case .match: "Match"
+            case .newName: "New Name"
+            case .status: "Status"
+            }
         }
     }
 
@@ -262,14 +277,13 @@ struct ItemList: NSViewRepresentable {
             let item = rows[row]
             switch column {
             case .file:
-                return label(
-                    in: tableView, item.fileName, truncation: .byTruncatingMiddle, help: item.fileName)
+                return label(in: tableView, item.fileName, truncation: .byTruncatingMiddle)
             case .match:
                 return matchCell(in: tableView, for: item)
             case .newName:
                 return label(
                     in: tableView, item.newPath ?? "—", truncation: .byTruncatingHead,
-                    dimmed: item.newPath == nil, help: item.newPath)
+                    dimmed: item.newPath == nil)
             case .status:
                 return statusCell(in: tableView, for: item.status)
             }
@@ -308,7 +322,7 @@ struct ItemList: NSViewRepresentable {
                     help: "In your library")
             case .noMatch:
                 cell.show(
-                    "exclamationmark.triangle.fill", color: .systemYellow, label: "Needs attention",
+                    "questionmark.circle.fill", color: .systemYellow, label: "Needs attention",
                     help: "Not found on The Movie Database. Right-click and choose Search Again… "
                         + "to try a different title.")
             case .failed(let message):
@@ -349,6 +363,7 @@ struct ItemList: NSViewRepresentable {
 
         func menuNeedsUpdate(_ menu: NSMenu) {
             menu.removeAllItems()
+            if menu === table?.headerView?.menu { return showColumnMenu(menu) }
             guard let table, rows.indices.contains(table.clickedRow) else { return }
             let indexes =
                 table.selectedRowIndexes.contains(table.clickedRow)
@@ -375,6 +390,30 @@ struct ItemList: NSViewRepresentable {
 
         @objc private func removeTargets() {
             parent.model.remove(Set(menuTargets))
+        }
+
+        // MARK: Header menu
+
+        /// Right-clicking a header shows or hides columns, as in Finder.
+        /// Downloaded File always stays.
+        private func showColumnMenu(_ menu: NSMenu) {
+            guard let table else { return }
+            for column in Column.allCases {
+                guard let tableColumn = table.tableColumn(withIdentifier: .init(column.rawValue)) else {
+                    continue
+                }
+                let item = menu.addItem(
+                    withTitle: column.name, action: #selector(toggleColumn(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = tableColumn
+                item.state = tableColumn.isHidden ? .off : .on
+                item.isEnabled = column != .file
+            }
+        }
+
+        @objc private func toggleColumn(_ sender: NSMenuItem) {
+            guard let column = sender.representedObject as? NSTableColumn else { return }
+            column.isHidden.toggle()
         }
     }
 }
@@ -428,6 +467,7 @@ private final class LabelCell: NSTableCellView {
         super.init(frame: frame)
         field.translatesAutoresizingMaskIntoConstraints = false
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.allowsExpansionToolTips = true
         addSubview(field)
         textField = field
         NSLayoutConstraint.activate([
