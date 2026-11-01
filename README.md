@@ -1,4 +1,4 @@
-# Reelmark
+# Filmfold
 
 **Rename downloaded movies and TV episodes for Jellyfin, on your Mac.**
 
@@ -6,9 +6,9 @@
 [![macOS 26 or later](https://img.shields.io/badge/macOS-26%2B-blue)](#requirements)
 [![MIT License](https://img.shields.io/github/license/MineGene/reelmark)](LICENSE)
 
-<img src="docs/screenshot.png" width="872" alt="Reelmark's window, empty and waiting: “Drag Movies and TV Episodes Here”, with an Add Files button.">
+<img src="docs/screenshot.png" width="872" alt="Filmfold's window, empty and waiting: “Drag Movies and TV Episodes Here”, with an Add Files button.">
 
-Drag in a download, and Reelmark looks it up on [The Movie Database](https://www.themoviedb.org) (TMDB). It then copies it into your Jellyfin library with exactly the folder and file names Jellyfin expects:
+Drag in a download, and Filmfold looks it up on [The Movie Database](https://www.themoviedb.org) (TMDB). It then copies it into your Jellyfin library with exactly the folder and file names Jellyfin expects:
 
 ```
 Movies/Dune - Part Two (2024) [tmdbid-693134]/Dune - Part Two (2024) [tmdbid-693134].mkv
@@ -37,19 +37,19 @@ The TMDB id in each folder name tells Jellyfin exactly which title it is, so rem
 
 ## Install
 
-1. Download the DMG from the [latest release](https://github.com/MineGene/reelmark/releases/latest), open it and drag Reelmark to Applications. (Newer versions marked *Pre-release* on the Releases page haven't been checked on a Mac yet; the latest release has.)
-2. Reelmark is free and isn't notarised by Apple (that needs a paid developer account), so macOS blocks it until you say you trust this copy. Open **Terminal**, run this once, then open Reelmark as usual:
+1. Download the zip from the [latest release](https://github.com/MineGene/reelmark/releases/latest), open it and drag Filmfold to Applications.
+2. Filmfold is free and isn't notarised by Apple (that needs a paid developer account), so macOS blocks it until you say you trust this copy. Open **Terminal**, run this once, then open Filmfold as usual:
 
    ```sh
-   xattr -dr com.apple.quarantine /Applications/Reelmark.app
+   xattr -dr com.apple.quarantine /Applications/Filmfold.app
    ```
 
-   You'll need to do this once for each new version. Rather not use Terminal? Open Reelmark, then go to **System Settings › Privacy & Security**, scroll down, click **Open Anyway** and confirm.
+   You'll need to do this once for each new version. Rather not use Terminal? Open Filmfold, then go to **System Settings › Privacy & Security**, scroll down, click **Open Anyway** and confirm.
 
-## Using Reelmark
+## Using Filmfold
 
-1. **Choose your library folders:** the first time you copy, Reelmark asks for your Jellyfin Movies or Shows folder. You can change them any time in **Reelmark › Settings**.
-2. **Add downloads:** drag video files or whole download folders into the window, or click **Add Files** (⌘O). Reelmark looks up each one on TMDB. In a long list, it scrolls to the first new file and selects it.
+1. **Choose your library folders:** the first time you copy, Filmfold asks for your Jellyfin Movies or Shows folder. You can change them any time in **Filmfold › Settings**.
+2. **Add downloads:** drag video files or whole download folders into the window, or click **Add Files** (⌘O). Filmfold looks up each one on TMDB. In a long list, it scrolls to the first new file and selects it.
 3. **Check the matches:** the New Name column shows where each file will go. In a long list, type in the search field (⌘F) to show only the files, matches or new names containing those words. If there's more than one possible match, pick the right one from the menu. To search with a different title, right-click and choose **Search Again…**.
 4. **Copy to Library:** click **Copy to Library**, or **Move to Library** if you've chosen Move in Settings. **Clear** empties the list when you're done (your files aren't touched), and Delete removes just the selected items. Changed your mind? **Edit ▸ Undo** (⌘Z) puts moved files back and sends copies to the Trash, and **Edit ▸ Redo** (⇧⌘Z) files them again.
 
@@ -73,56 +73,55 @@ They're all in the File and Edit menus too, and right-clicking an item offers Se
 
 ### Shortcuts and Spotlight
 
-Reelmark adds two actions to the Shortcuts app, which Spotlight can run too:
+Filmfold adds two actions to the Shortcuts app, which Spotlight can run too:
 
-- **Add Files to Reelmark:** adds video files or download folders, as dragging them in does. Use it in a Finder Quick Action, or a Folder Action on your downloads folder.
+- **Add Files to Filmfold:** adds video files or download folders, as dragging them in does. Use it in a Finder Quick Action, or a Folder Action on your downloads folder.
 - **Add Matched Files to Library:** waits for the matches, then copies or moves every matched file, as the Copy to Library button does.
 
-They run inside Reelmark, so nothing more leaves your Mac than when you use the window.
+They run inside Filmfold, so nothing more leaves your Mac than when you use the window.
 
 ### From Finder and the Dock
 
-- Drop videos or download folders on Reelmark's Dock icon, or choose **Open With › Reelmark** in Finder. Reelmark never becomes the default app for your videos.
-- Select files or folders in Finder, then right-click and choose **Services › Add to Reelmark**.
-- Right-click Reelmark's Dock icon for **Add Files…**.
+- Drop videos or download folders on Filmfold's Dock icon, or choose **Open With › Filmfold** in Finder. Filmfold never becomes the default app for your videos.
+- Select files or folders in Finder, then right-click and choose **Services › Add to Filmfold**.
+- Right-click Filmfold's Dock icon for **Add Files…**.
 
 ## Privacy
 
 - **Only a title and year leave your Mac:** for example "Severance 2022", sent to TMDB's API. File names, folders and everything else stay on your Mac.
 - **Nothing collected:** no analytics, no automatic crash reporting, no update checks, and nothing about your files is logged or saved.
 - **Bug reports are yours to send:** **Help › Report a Bug…** shows exactly what it would share (versions, your Mac's model, settings, how many items are in the list, and summaries of recent crashes) and opens a pre-filled GitHub issue in your browser only if you choose to. File names, folders and tokens are never included.
-- **Sandboxed:** Reelmark can only touch the files you add and the two library folders you choose.
-- **Declared the standard way:** Reelmark includes Apple's privacy manifest, which states that it doesn't track you and collects no data.
-- **Checked automatically:** every build is tested for the exact permissions and for TMDB being the only web address in the app.
+- **Sandboxed:** Filmfold can only touch the files you add and the two library folders you choose.
+- **Declared the standard way:** Filmfold includes Apple's privacy manifest, which states that it doesn't track you and collects no data.
 
-Reelmark comes with its own read-only TMDB access token. It's public on purpose, as any key inside an open-source app would be. If you'd rather use your own, paste the **API Read Access Token** from your [TMDB account](https://www.themoviedb.org/settings/api) into Settings; it's stored in your Keychain.
+Filmfold comes with its own read-only TMDB access token. It's public on purpose, as any key inside an open-source app would be. If you'd rather use your own, paste the **API Read Access Token** from your [TMDB account](https://www.themoviedb.org/settings/api) into Settings; it's stored in your Keychain.
 
 ## Verify a release
 
 GitHub Actions builds every release from this repository and signs a public record of the build. With the [GitHub CLI](https://cli.github.com):
 
 ```sh
-shasum -a 256 -c Reelmark-vX.Y.Z.zip.sha256
-gh attestation verify Reelmark-vX.Y.Z.zip -R minegene-labs/reelmark
+shasum -a 256 -c Filmfold-vX.Y.Z.zip.sha256
+gh attestation verify Filmfold-vX.Y.Z.zip -R minegene-labs/reelmark
 ```
 
 ## Questions
 
 **Why does macOS warn me when I first open it?**
-Apple's notarisation needs a paid developer account. Reelmark is free and unsigned, so macOS asks you to confirm once per version, with the Terminal command or **Open Anyway** under Install. The command only removes the "downloaded from the internet" mark from Reelmark itself. You can check the download yourself first with the steps above.
+Apple's notarisation needs a paid developer account. Filmfold is free and unsigned, so macOS asks you to confirm once per version, with the Terminal command or **Open Anyway** under Install. The command only removes the "downloaded from the internet" mark from Filmfold itself. You can check the download yourself first with the steps above.
 
 **Does it change or delete my downloads?**
-No. Copy leaves the original exactly where it is, and Move only moves it. Reelmark never deletes anything, and never overwrites a file that's already in your library. Undoing a copy sends the copy (never the original) to the Trash, where you can still get it back.
+No. Copy leaves the original exactly where it is, and Move only moves it. Filmfold never deletes anything, and never overwrites a file that's already in your library. Undoing a copy sends the copy (never the original) to the Trash, where you can still get it back.
 
 **What about subtitles and other files?**
-Reelmark handles video files only: every type Jellyfin plays, such as `mkv`, `mp4`, `avi`, `mov`, `ts`, `mts`, `vob`, `iso` and `webm`. It searches every folder you drag in, however deeply nested, including folders it reaches through links. Subtitles and other files stay where they are.
+Filmfold handles video files only: every type Jellyfin plays, such as `mkv`, `mp4`, `avi`, `mov`, `ts`, `mts`, `vob`, `iso` and `webm`. It searches every folder you drag in, however deeply nested, including folders it reaches through links. Subtitles and other files stay where they are.
 
 **Does it update itself?**
-No. Reelmark never checks for updates, so new versions are on the [Releases](https://github.com/MineGene/reelmark/releases) page, and [CHANGELOG.md](CHANGELOG.md) lists what changed in each.
+No. Filmfold never checks for updates, so new versions are on the [Releases](https://github.com/MineGene/reelmark/releases) page, and [CHANGELOG.md](CHANGELOG.md) lists what changed in each.
 
 ## How it's made
 
-Reelmark is written almost entirely by Claude, Anthropic's AI, through Claude Code, with the maintainer setting the direction and testing on a real Mac. Claude's commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), so they're easy to tell apart from the maintainer's. Nothing is built on a personal machine: GitHub Actions builds, tests and releases every version. Every change is checked automatically for permissions, web addresses, commit privacy, reproducibility and code scanning.
+Filmfold is written almost entirely by Claude, Anthropic's AI, through Claude Code, with the maintainer setting the direction and testing on a real Mac. Claude's commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), so they're easy to tell apart from the maintainer's. Nothing is built on a personal machine: GitHub Actions builds, tests and releases every version. Every change is checked automatically for formatting and by the tests, and the app is built from scratch.
 
 ## Contributing and security
 

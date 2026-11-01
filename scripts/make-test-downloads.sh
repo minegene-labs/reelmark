@@ -1,7 +1,7 @@
 #!/bin/bash
-# Makes a folder of empty files named like downloads, for trying Reelmark
+# Makes a folder of empty files named like downloads, for trying Filmfold
 # by hand: drag the folder (or one of its subfolders) into the window.
-# Reelmark only ever reads file names, never contents, so empty files
+# Filmfold only ever reads file names, never contents, so empty files
 # behave exactly like real ones and take no space.
 #
 #   Screenshot/  Blender's open movies (Creative Commons) and public-domain
@@ -17,7 +17,7 @@
 #                into itself, broken links and the same file reached twice.
 #
 # Usage: scripts/make-test-downloads.sh [folder] [--count N] [--shows N]
-#   folder     where to create it (default: ~/Desktop/Reelmark Test Downloads)
+#   folder     where to create it (default: ~/Desktop/Filmfold Test Downloads)
 #   --count N  how many made-up episodes to add to Stress/Volume/
 #              (default 500; try 10000 or 100000 for a data hoarder's folder)
 #   --shows N  how many made-up shows they're spread across (default: one
@@ -28,7 +28,7 @@
 # overwrite anything. Delete the folder when you're done with it.
 set -euo pipefail
 
-folder="$HOME/Desktop/Reelmark Test Downloads"
+folder="$HOME/Desktop/Filmfold Test Downloads"
 count=500
 shows=""
 while [ $# -gt 0 ]; do
@@ -203,4 +203,4 @@ ln -s "$folder/Stress/Links/Missing.Made.Up.Movie.2010.mkv" "$folder/Stress/Link
 
 files=$(find "$folder" -type f | wc -l | tr -d ' ')
 echo "Made $files empty files in: $folder"
-echo "Drag the whole folder, or Screenshot/ or Stress/, into Reelmark."
+echo "Drag the whole folder, or Screenshot/ or Stress/, into Filmfold."

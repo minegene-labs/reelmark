@@ -1,0 +1,434 @@
+import AppKit
+import XCTest
+
+/// Launches the real app and uses it the way a person would, so anything
+/// that crashes or breaks the window (like the Delete and Clear crashes in
+/// 0.1.0) fails CI before it can be released.
+///
+/// The app is launched with "-ui-testing", a Debug-only switch that fills the
+/// list with four made-up items (see LibraryModel.forLaunch): one ready to
+/// copy, two already in the library and one with no match. No real files are
+/// touched and nothing goes online.
+///
+/// Items are found by their file names rather than by counting table rows:
+/// SwiftUI's Table doesn't promise how its rows appear to accessibility.
+final class FilmfoldUITests: XCTestCase {
+
+    private static let ready = "Ready.Movie.2020.mkv"
+    private static let copied = ["Copied.Movie.2020.mkv", "Another.Copied.Movie.2020.mkv"]
+    private static let unmatched = "Unknown.Thing.2020.mkv"
+    private static let all = [ready] + copied + [unmatched]
+
+    @MainActor
+    private func launch(withItems: Bool = true) -> XCUIApplication {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = withItems ? ["-ui-testing"] : []
+        app.launch()
+        return app
+    }
+
+    @MainActor
+    private func item(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        app.staticTexts[name].firstMatch
+    }
+
+    /// Waits up to 10 seconds until exactly `names` are listed. On failure the
+    /// window's accessibility tree is printed to the log to show why.
+    @MainActor
+    private func waitForItems(_ names: [String], in app: XCUIApplication) {
+        let expectations = Self.all.map { name in
+            expectation(
+                for: NSPredicate(format: "exists == %@", NSNumber(value: names.contains(name))),
+                evaluatedWith: item(name, in: app))
+        }
+        if XCTWaiter().wait(for: expectations, timeout: 10) != .completed {
+            print(app.debugDescription)
+            XCTFail("Expected the list to show exactly \(names)")
+        }
+    }
+
+    /// True once `condition` holds, checking for up to 5 seconds: the list
+    /// redraws a moment after a click, not instantly.
+    @MainActor
+    private func eventually(_ condition: () -> Bool) -> Bool {
+        let deadline = Date.now.addingTimeInterval(5)
+        while Date.now < deadline {
+            if condition() { return true }
+            RunLoop.current.run(until: .now.addingTimeInterval(0.2))
+        }
+        return condition()
+    }
+
+    @MainActor
+    private func assertStillRunning(_ app: XCUIApplication) {
+        XCTAssertEqual(app.state, .runningForeground, "Filmfold quit unexpectedly")
+    }
+
+    @MainActor
+    func testEmptyWindowExplainsDragAndDrop() {
+        let app = launch(withItems: false)
+        XCTAssertTrue(app.staticTexts["Drag Movies and TV Episodes Here"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Add Files…"].exists)
+    }
+
+    /// Files can be dropped anywhere in the window, empty or not, so the drop
+    /// area must fill everything below the toolbar.
+    @MainActor
+    func testDropAreaFillsTheWindow() {
+        for withItems in [false, true] {
+            let app = launch(withItems: withItems)
+            let window = app.windows.firstMatch
+            let dropArea = app.descendants(matching: .any)["dropArea"].firstMatch
+            XCTAssertTrue(dropArea.waitForExistence(timeout: 10))
+            XCTAssertEqual(dropArea.frame.width, window.frame.width, accuracy: 2)
+            // Everything but the toolbar, which is well under 120 points.
+            XCTAssertGreaterThan(dropArea.frame.height, window.frame.height - 120)
+            app.terminate()
+        }
+    }
+
+    /// Xcode's accessibility audit (the checks Accessibility Inspector runs:
+    /// descriptions, contrast, hit areas, text sizes and more) on the empty
+    /// window and on a filled list. Every issue is listed, then the test
+    /// fails once if there are any.
+    ///
+    /// Skipped, because they belong to macOS rather than to Filmfold:
+    /// - contrast: Filmfold uses only the system's own text colours (no
+    ///   custom colours, see CLAUDE.md), which macOS sets and adjusts for
+    ///   Increase Contrast, so the audit's contrast results are Apple's;
+    /// - containers macOS adds itself (SwiftUI's unnamed groups, the Touch Bar)
+    ///   and the hover help tag macOS draws for a tooltip.
+    @MainActor
+    func testWindowPassesTheAccessibilityAudit() throws {
+        var issues: [String] = []
+        for withItems in [false, true] {
+            let app = launch(withItems: withItems)
+            if withItems {
+                waitForItems(Self.all, in: app)
+            } else {
+                let emptyState = app.staticTexts["Drag Movies and TV Episodes Here"]
+                XCTAssertTrue(emptyState.waitForExistence(timeout: 10))
+            }
+            try app.performAccessibilityAudit { issue in
+                let element = issue.element
+                let isContrast = issue.auditType == .contrast
+                let isSystemContainer =
+                    issue.auditType == .sufficientElementDescription
+                    && [.group, .touchBar, .helpTag].contains(element?.elementType)
+                    && (element?.identifier ?? "").isEmpty
+                if !isContrast && !isSystemContainer {
+                    let window = withItems ? "list" : "empty window"
+                    issues.append("\(window): \(issue.compactDescription): \(element.map { "\($0)" } ?? "-")")
+                }
+                return true
+            }
+            app.terminate()
+        }
+        XCTAssertTrue(issues.isEmpty, "Accessibility audit:\n" + issues.joined(separator: "\n"))
+    }
+
+    /// Help › Report a Bug… previews what would be shared and offers to open
+    /// it in the browser. The test cancels rather than opening a browser.
+    @MainActor
+    func testReportABugShowsWhatWouldBeShared() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        app.menuBars.menuBarItems["Help"].click()
+        app.menuItems["Report a Bug…"].click()
+        let note = app.staticTexts.matching(
+            NSPredicate(format: "value CONTAINS 'File names, folders and tokens are never included'")
+        ).firstMatch
+        XCTAssertTrue(note.waitForExistence(timeout: 10), "The report preview didn't open")
+        let details = app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH '- Filmfold: '"))
+            .firstMatch
+        XCTAssertTrue(details.exists, "The preview doesn't show the details")
+        let text = details.value as? String ?? ""
+        XCTAssertTrue(text.contains("4 items"), "The details don't summarise the list: \(text)")
+        XCTAssertFalse(text.contains(Self.ready), "The details include a file name")
+        XCTAssertTrue(app.buttons["Open in Browser"].exists)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(eventually { !note.exists }, "The preview didn't close")
+        assertStillRunning(app)
+    }
+
+    /// Opening a video with Filmfold (Finder's Open With, or a drop on the
+    /// Dock icon) adds it to the list. The file is an empty placeholder.
+    @MainActor
+    func testOpeningAVideoWithFilmfoldAddsIt() throws {
+        let name = "Made.Up.Opened.Movie.2020.mkv"
+        let folder = FileManager.default.temporaryDirectory
+            .appending(path: "FilmfoldOpen-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appending(path: name)
+        try Data().write(to: file)
+
+        let app = launch(withItems: false)
+        XCTAssertTrue(app.staticTexts["Drag Movies and TV Episodes Here"].waitForExistence(timeout: 10))
+        app.open(file)
+        XCTAssertTrue(item(name, in: app).waitForExistence(timeout: 10), "The opened file wasn't added")
+        assertStillRunning(app)
+        // macOS may launch a second copy to open the file, outside the test's
+        // own launch, which app.terminate() doesn't reach. Quit every copy:
+        // one left running was found by the next tests instead.
+        app.terminate()
+        let copies = {
+            NSRunningApplication.runningApplications(withBundleIdentifier: "com.minegene.filmfold")
+        }
+        copies().forEach { $0.forceTerminate() }
+        XCTAssertTrue(eventually { copies().isEmpty }, "A copy of Filmfold kept running")
+    }
+
+    /// Command-F goes to the toolbar's search field, and typing narrows the
+    /// list, ignoring case; clearing the field shows everything again.
+    @MainActor
+    func testSearchNarrowsTheList() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        app.menuBars.menuBarItems["Edit"].click()
+        XCTAssertTrue(app.menuItems["Find"].exists, "No Find in the Edit menu")
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("f", modifierFlags: .command)
+        app.typeText("copied")
+        waitForItems(Self.copied, in: app)
+        // Select the typed text and delete it.
+        app.typeKey("a", modifierFlags: .command)
+        app.typeKey(.delete, modifierFlags: [])
+        waitForItems(Self.all, in: app)
+        app.typeText("nothing like this")
+        let noResults = app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'No Results'"))
+        XCTAssertTrue(noResults.firstMatch.waitForExistence(timeout: 10), "No “No Results” message")
+        assertStillRunning(app)
+    }
+
+    /// Edit › Find › Find… goes to the search field like Command-F; the
+    /// subtitle counts what the search shows, and Escape clears the field.
+    @MainActor
+    func testFindMenuSearchesAndEscapeClears() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        XCTAssertTrue(app.staticTexts["4 items"].waitForExistence(timeout: 10), "No item count")
+        app.menuBars.menuBarItems["Edit"].click()
+        app.menuItems["Find"].hover()
+        let find = app.menuItems["Find…"]
+        XCTAssertTrue(find.waitForExistence(timeout: 5), "No Edit › Find › Find…")
+        find.click()
+        app.typeText("copied")
+        waitForItems(Self.copied, in: app)
+        XCTAssertTrue(app.staticTexts["2 of 4 items"].waitForExistence(timeout: 10), "No “2 of 4 items”")
+        app.typeKey(.escape, modifierFlags: [])
+        waitForItems(Self.all, in: app)
+        XCTAssertTrue(app.staticTexts["4 items"].waitForExistence(timeout: 10), "The count didn't come back")
+        assertStillRunning(app)
+    }
+
+    /// What VoiceOver reads for the list: each column's name, and the status
+    /// icons by what they mean rather than by their symbol.
+    @MainActor
+    func testListReadsColumnsAndStatusesToVoiceOver() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        for column in ["Downloaded File", "Match", "New Name", "Status"] {
+            let header = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label == %@ OR title == %@", column, column)).firstMatch
+            XCTAssertTrue(header.exists, "No \(column) column header for VoiceOver")
+        }
+        // Counted by row: UI tests can find a status twice in one row (the
+        // cell and the icon inside it), though VoiceOver reads it once.
+        let statuses = [("In your library", 2), ("Needs attention", 1), ("Ready to file", 1)]
+        for (label, count) in statuses {
+            let icons = app.images.matching(NSPredicate(format: "label == %@", label))
+            let rows = {
+                // Centres more than 8 points apart are different rows.
+                let centres = icons.allElementsBoundByIndex.map(\.frame.midY).sorted()
+                return zip(centres, centres.dropFirst()).count(where: { $1 - $0 > 8 }) + (centres.isEmpty ? 0 : 1)
+            }
+            XCTAssertTrue(eventually { rows() == count }, "Expected \(count) rows “\(label)”, not \(rows())")
+        }
+    }
+
+    /// Help › Request a Feature… previews the same details, and Copy puts
+    /// them on the clipboard, without file names.
+    @MainActor
+    func testRequestAFeatureCopiesTheDetails() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        NSPasteboard.general.clearContents()
+        app.menuBars.menuBarItems["Help"].click()
+        app.menuItems["Request a Feature…"].click()
+        let title = app.staticTexts["Request a Feature"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10), "The preview didn't open")
+        app.buttons["Copy"].firstMatch.click()
+        let copied = { NSPasteboard.general.string(forType: .string) ?? "" }
+        XCTAssertTrue(
+            eventually { copied().hasPrefix("- Filmfold: ") }, "Copy didn't copy the details: \(copied())")
+        XCTAssertTrue(copied().contains("4 items"), "The copied details don't summarise the list")
+        XCTAssertFalse(copied().contains(Self.ready), "The copied details include a file name")
+        app.typeKey(.escape, modifierFlags: [])
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testListShowsEveryItem() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+    }
+
+    @MainActor
+    func testDeleteKeyRemovesTheSelectedItem() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.unmatched, in: app).click()
+        app.typeKey(.delete, modifierFlags: [])
+        waitForItems([Self.ready] + Self.copied, in: app)
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testCommandDeleteRemovesTheSelectedItem() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.unmatched, in: app).click()
+        app.typeKey(.delete, modifierFlags: .command)
+        waitForItems([Self.ready] + Self.copied, in: app)
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testCommandROpensSearchAgainForTheSelectedItem() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.unmatched, in: app).click()
+        app.typeKey("r", modifierFlags: .command)
+        XCTAssertTrue(app.staticTexts["Search The Movie Database"].waitForExistence(timeout: 10))
+        // Command-Delete must not reach the list while the sheet's text field is in use.
+        app.typeKey(.delete, modifierFlags: .command)
+        // Escape is Cancel. (Clicking "Cancel" can hit the Touch Bar's copy
+        // of the button, which UI tests can't click.)
+        app.typeKey(.escape, modifierFlags: [])
+        let title = app.staticTexts["Search The Movie Database"]
+        XCTAssertTrue(eventually { !title.exists }, "The sheet didn't close")
+        waitForItems(Self.all, in: app)
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testFileMenuOffersTheListCommands() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.ready, in: app).click()
+        app.menuBars.menuBarItems["File"].click()
+        for name in [
+            "Add Files…", "Copy to Library", "Search Again…", "Show in Finder", "Remove from List",
+            "Clear List",
+        ] {
+            XCTAssertTrue(app.menuItems[name].exists, "No \(name) in the File menu")
+        }
+        XCTAssertTrue(app.menuItems["Copy to Library"].isEnabled)
+        app.menuItems["Clear List"].click()
+        XCTAssertTrue(app.staticTexts["Drag Movies and TV Episodes Here"].waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testRightClickOffersShowInFinder() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.ready, in: app).rightClick()
+        XCTAssertTrue(app.menuItems["Show in Finder"].waitForExistence(timeout: 10))
+        app.typeKey(.escape, modifierFlags: [])
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testSpaceOpensQuickLook() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        let windows = app.windows.count
+        item(Self.ready, in: app).click()
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(eventually { app.windows.count > windows }, "Quick Look didn't open")
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(eventually { app.windows.count == windows }, "Quick Look didn't close")
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testClearEmptiesTheWholeList() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        app.buttons["Clear"].firstMatch.click()
+        XCTAssertTrue(app.staticTexts["Drag Movies and TV Episodes Here"].waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testRemovingEverythingShowsTheEmptyWindow() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.ready, in: app).click()
+        app.typeKey("a", modifierFlags: .command)
+        app.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(app.staticTexts["Drag Movies and TV Episodes Here"].waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testCopyAsksForAMissingLibraryFolder() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        app.buttons["Copy 1 to Library"].firstMatch.click()
+        // With no Movies folder chosen yet, Copy asks for one with the open
+        // panel. (The panel is drawn by macOS for the sandbox, so its
+        // contents may not show to UI tests; the sheet itself does.)
+        XCTAssertTrue(app.sheets.firstMatch.waitForExistence(timeout: 10), "Copy didn't ask for a folder")
+        // Cancelling leaves the item saying where to choose it later.
+        app.typeKey(.escape, modifierFlags: [])
+        let message = app.staticTexts["Choose a Movies folder in Settings."].firstMatch
+        XCTAssertTrue(message.waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testSettingsOpen() {
+        let app = launch()
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(app.staticTexts["Built in"].waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testAboutWindowOpens() {
+        let app = launch()
+        app.menuBars.menuBarItems["Filmfold"].click()
+        app.menuItems["About Filmfold"].click()
+        let version = app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Version'")).firstMatch
+        XCTAssertTrue(version.waitForExistence(timeout: 10))
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testClickingAColumnHeaderSortsBothWays() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        let header = app.buttons["Downloaded File"].firstMatch
+        guard header.waitForExistence(timeout: 10) else {
+            print(app.debugDescription)
+            return XCTFail("No Downloaded File column header")
+        }
+        // Listed in order: Ready…, Copied…, Another.Copied…, Unknown…
+        let ready = item(Self.ready, in: app)
+        let another = item("Another.Copied.Movie.2020.mkv", in: app)
+
+        // Table header buttons report themselves as not hittable to UI
+        // tests even when visible, so click the middle of the header itself.
+        let headerCentre = header.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        headerCentre.click()  // A to Z: Another.Copied… comes before Ready…
+        XCTAssertTrue(eventually { another.frame.minY < ready.frame.minY }, "Not sorted A to Z")
+        Thread.sleep(forTimeInterval: 1)  // so two clicks aren't read as a double-click
+        headerCentre.click()  // Z to A
+        XCTAssertTrue(eventually { ready.frame.minY < another.frame.minY }, "Not sorted Z to A")
+        assertStillRunning(app)
+    }
+}

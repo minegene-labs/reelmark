@@ -44,7 +44,7 @@ Answers to paste into the [bestpractices.dev](https://www.bestpractices.dev) for
 | enhancement_responses | Met | **Maintainer**: as above, for feature requests. |
 | report_archive | Met | R/issues (public and searchable). |
 | vulnerability_report_process | Met | R/blob/main/SECURITY.md |
-| vulnerability_report_private | Met | GitHub private vulnerability reporting, see SECURITY.md. **Maintainer**: confirm it's turned on in Settings › Code security. |
+| vulnerability_report_private | Met | GitHub private vulnerability reporting (turned on), see SECURITY.md. |
 | vulnerability_report_response | Met | SECURITY.md commits to a first reply within 14 days. No reports so far. |
 
 ## Quality
@@ -53,15 +53,15 @@ Answers to paste into the [bestpractices.dev](https://www.bestpractices.dev) for
 |---|---|---|
 | build | Met | `xcodebuild` with the shared scheme, see CONTRIBUTING.md (Building locally). |
 | build_common_tools | Met | Xcode / `xcodebuild` and Swift Package Manager. |
-| build_floss_tools | Unmet | Building a macOS app needs Xcode, which isn't open source. The core package (`Packages/ReelmarkCore`) builds and tests with the open-source Swift toolchain. |
-| test | Met | XCTest suites in `Packages/ReelmarkCore/Tests` and `ReelmarkUITests`, run as in CONTRIBUTING.md. |
+| build_floss_tools | Unmet | Building a macOS app needs Xcode, which isn't open source. The core package (`Packages/FilmfoldCore`) builds and tests with the open-source Swift toolchain. |
+| test | Met | XCTest suites in `Packages/FilmfoldCore/Tests` and `FilmfoldUITests`, run as in CONTRIBUTING.md. |
 | test_invocation | Met | `swift test` and `xcodebuild test`, the standard commands. |
 | test_most | Met | The naming, parsing, search and file logic lives in the core package and is unit tested; the UI tests cover every list command. |
-| test_continuous_integration | Met | `.github/workflows/ci.yml` builds and tests every pull request. |
+| test_continuous_integration | Met | `.github/workflows/ci.yml` runs the core tests and builds the app on every pull request. |
 | test_policy | Met | CONTRIBUTING.md (From idea to release, Code): changes come with tests. |
 | tests_are_added | Met | Recent feature pull requests added tests, for example the Quick Look UI test in [minegene-labs/reelmark#88](https://github.com/minegene-labs/reelmark/pull/88). |
-| tests_documented_added | Met | CONTRIBUTING.md and the pull request template. |
-| warnings | Met | Swift 6 with complete strict concurrency checking; `swift format` lint in CI. |
+| tests_documented_added | Met | CONTRIBUTING.md (From idea to release, Code). |
+| warnings | Met | Swift 6 with complete strict concurrency checking, and `swift format lint --strict` in CI. |
 | warnings_fixed | Met | **Maintainer**: confirm CI builds are free of warnings. |
 | warnings_strict | Met | Strict concurrency is set to `complete`, the strictest level. |
 
@@ -69,7 +69,7 @@ Answers to paste into the [bestpractices.dev](https://www.bestpractices.dev) for
 
 | Criterion | Answer | Justification |
 |---|---|---|
-| know_secure_design | Met | **Maintainer** statement. The design rules in CLAUDE.md (sandbox, fixed entitlements, one web address, Keychain) apply least privilege and a small attack surface. |
+| know_secure_design | Met | **Maintainer** statement. The rules in CONTRIBUTING.md (sandbox, fixed entitlements, one web address, Keychain, no third-party code) apply least privilege and keep the attack surface small. |
 | know_common_errors | Met | **Maintainer** statement. Swift is memory safe; the sandbox limits file access to what the user chose. |
 | crypto_published | N/A | The app uses no cryptography of its own; HTTPS comes from macOS (URLSession). |
 | crypto_call | N/A | As above. |
@@ -90,13 +90,13 @@ Answers to paste into the [bestpractices.dev](https://www.bestpractices.dev) for
 
 | Criterion | Answer | Justification |
 |---|---|---|
-| static_analysis | Met | CodeQL runs on pull requests through the shared `minegene-labs/workflows` CI. **Maintainer**: confirm CodeQL for Swift is enabled there. |
-| static_analysis_common_vulnerabilities | Met | CodeQL's security queries. |
-| static_analysis_fixed | Met | **Maintainer**: confirm no open medium or higher CodeQL alerts (Security › Code scanning). |
-| static_analysis_often | Met | On every pull request. |
-| dynamic_analysis | Met | The UI tests run the real app on every pull request. |
+| static_analysis | Met once CodeQL is on | Not met yet: the shared CI has no CodeQL. **Maintainer**: turn on Settings › Code security › CodeQL analysis › Set up › Default (Swift is supported), then answer Met: "CodeQL default setup scans every pull request and `main`." |
+| static_analysis_common_vulnerabilities | Met once CodeQL is on | CodeQL's security queries. |
+| static_analysis_fixed | Met once CodeQL is on | **Maintainer**: fix any medium or higher alerts from the first scan (Security › Code scanning). |
+| static_analysis_often | Met once CodeQL is on | Default setup scans every pull request and push to `main`. |
+| dynamic_analysis | Unmet | Suggested only. The UI tests run the real app, but only on a Mac, not in CI. |
 | dynamic_analysis_unsafe | N/A | Written only in Swift, which is memory safe; no C or C++. |
-| dynamic_analysis_enable_assertions | Met | UI tests run the Debug build, with assertions on. |
-| dynamic_analysis_fixed | Met | **Maintainer**: confirm no open medium or higher findings. |
+| dynamic_analysis_enable_assertions | Unmet | Suggested only, as above. |
+| dynamic_analysis_fixed | N/A | No dynamic analysis findings. |
 
 After the project is registered and passes, add the badge to the top of README.md.
