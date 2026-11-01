@@ -99,14 +99,12 @@ Reelmark comes with its own read-only TMDB access token. It's public on purpose,
 
 ## Verify a release
 
-You don't have to take anyone's word for what's in the download. GitHub Actions builds every release from this repository, signs a public record of the build, and then rebuilds it on a fresh machine to check that it comes out the same. You can run the same checks on your own Mac:
+GitHub Actions builds every release from this repository and signs a public record of the build. With the [GitHub CLI](https://cli.github.com):
 
 ```sh
-scripts/verify-release.sh 0.1.0            # checksum, signed build record, app contents, permissions
-scripts/verify-release.sh 0.1.0 --rebuild  # also rebuild from source with Xcode and compare
+shasum -a 256 -c Reelmark-vX.Y.Z.zip.sha256
+gh attestation verify Reelmark-vX.Y.Z.zip -R minegene-labs/reelmark
 ```
-
-Rebuilds match byte for byte, except the pixels of the app icon's pre-rendered pictures, which Xcode draws slightly differently each time. Those are still compared by name and size.
 
 ## Questions
 

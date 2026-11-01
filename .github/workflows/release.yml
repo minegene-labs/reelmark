@@ -1,226 +1,25 @@
-name: Release
+name: release
 
-# Releases happen by themselves: as soon as a change to the app is merged
-# into main, this builds, tests and publishes the next version as a
-# pre-release: the next minor version (0.2.0) when its changelog entries
-# add or change features, otherwise the next patch version (0.1.1). See
-# scripts/next-version.sh. Then a fresh machine downloads and rebuilds
-# it to verify it. Changes to docs, tests or CI alone don't make
-# a release. Pre-releases become the stable release once they've been
-# checked on a Mac: see promote.yml.
-#
-# Merges only start this when a person merged or turned on auto-merge:
-# GitHub never starts workflows from its own token's actions. So a nightly
-# run (about 2:40 am in Queensland) also checks main and catches anything
-# that slipped through.
-#
-# For a different version number (such as 1.0.0): Actions tab › Release ›
-# Run workflow (works from a phone), with the version.
 on:
   push:
     branches: [main]
-    # The same files scripts/next-version.sh counts as the app.
-    paths:
-      - "Reelmark/**"
-      - "Packages/ReelmarkCore/Sources/**"
-      - "Packages/ReelmarkCore/Package.swift"
-      - "Config/**"
-      - "Reelmark.xcodeproj/**"
-      - ".xcode-version"
-  schedule:
-    - cron: "37 16 * * *"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release, e.g. 1.0.0 (blank = chosen from the changelog entries)"
-        required: false
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
   group: release
-  cancel-in-progress: false
 
 jobs:
-  plan:
-    name: Decide version
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Only release from main
-        run: |
-          [ "$GITHUB_REF" = "refs/heads/main" ] \
-            || { echo "::error::Run the release from the main branch."; exit 1; }
-      - name: Next version
-        id: version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          version=$(scripts/next-version.sh "$INPUT_VERSION")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Version to release: ${version:-none}"
-
   release:
-    needs: plan
-    if: needs.plan.outputs.version != ''
-    runs-on: xcode-27
-    timeout-minutes: 45
-    environment: release
+    uses: minegene-labs/workflows/.github/workflows/release.yml@v1.1.0
+    with:
+      scheme: Reelmark
+      xcodegen: false
     permissions:
-      contents: write # create the GitHub Release
-      id-token: write # sign the provenance attestation
+      contents: write
+      id-token: write
       attestations: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Select pinned Xcode
-        run: scripts/select-xcode.sh
-
-      - name: Test core
-        run: swift test --package-path Packages/ReelmarkCore
-
-      - name: Build app
-        env:
-          REELMARK_VERSION: ${{ needs.plan.outputs.version }}
-        run: scripts/build-app.sh
-
-      - name: Check app
-        run: scripts/check-app.sh build/Release/Reelmark.app
-
-      - name: Record app digest
-        id: digest
-        env:
-          VERSION: ${{ needs.plan.outputs.version }}
-        run: |
-          file="build/Reelmark-$VERSION-app-digest.txt"
-          scripts/app-digest.sh build/Release/Reelmark.app > "$file"
-          echo "sha=$(shasum -a 256 "$file" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "xcode=$(xcodebuild -version | head -n 1)" >> "$GITHUB_OUTPUT"
-          echo "macos=$(sw_vers -productVersion)" >> "$GITHUB_OUTPUT"
-
-      - name: Make DMG
-        id: dmg
-        env:
-          VERSION: ${{ needs.plan.outputs.version }}
-        run: |
-          name="Reelmark-$VERSION.dmg"
-          staging=build/dmg
-          rm -rf "$staging" && mkdir -p "$staging"
-          ditto build/Release/Reelmark.app "$staging/Reelmark.app"
-          ln -s /Applications "$staging/Applications"
-          cp LICENSE "$staging/LICENSE.txt"
-          hdiutil create -volname Reelmark -srcfolder "$staging" -fs HFS+ -format UDZO -ov "build/$name"
-          (cd build && shasum -a 256 "$name" > "$name.sha256")
-          cat "build/$name.sha256"
-          echo "name=$name" >> "$GITHUB_OUTPUT"
-
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          # The DMG, and the app digest that binds the app inside it to this build.
-          subject-path: |
-            build/Reelmark-${{ needs.plan.outputs.version }}.dmg
-            build/Reelmark-${{ needs.plan.outputs.version }}-app-digest.txt
-
-      - name: Publish GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NAME: ${{ steps.dmg.outputs.name }}
-          VERSION: ${{ needs.plan.outputs.version }}
-          APP_DIGEST: ${{ steps.digest.outputs.sha }}
-          XCODE: ${{ steps.digest.outputs.xcode }}
-          MACOS: ${{ steps.digest.outputs.macos }}
-        run: |
-          sha=$(cut -d' ' -f1 "build/$NAME.sha256")
-          # What's new: the changelog.d entries added since the last release.
-          scripts/changelog.sh notes "$VERSION" > build/notes.md
-          cat >> build/notes.md <<EOF
-          Every version is published first as a pre-release, then becomes the stable release once it has been checked on a Mac, usually the following Monday. For the newest checked version, use the [latest release](https://github.com/$GITHUB_REPOSITORY/releases/latest).
-
-          ## Install
-
-          1. Download **$NAME** below, open it and drag Reelmark to Applications.
-          2. Reelmark is free and not notarised by Apple, so macOS blocks it until you say you trust this copy. Open **Terminal** and run this once, then open Reelmark as usual:
-
-             \`\`\`
-             xattr -dr com.apple.quarantine /Applications/Reelmark.app
-             \`\`\`
-
-             Needed once per version. Rather not use Terminal? Open Reelmark, then go to **System Settings › Privacy & Security**, scroll down, click **Open Anyway** and confirm.
-          3. There's nothing to set up: the first time you copy, Reelmark asks for your Jellyfin Movies or Shows folder, and it comes with its own TMDB access token.
-
-          Only download Reelmark from this Releases page.
-
-          ## Verify it yourself (optional)
-
-          You don't have to trust this page, the maintainer or the AI that wrote the code. On a Mac, from a copy of the source:
-
-          \`\`\`
-          scripts/verify-release.sh $VERSION            # checksum, signed build record, app contents, permissions
-          scripts/verify-release.sh $VERSION --rebuild  # also rebuild from source and compare
-          \`\`\`
-
-          DMG SHA-256: \`$sha\`
-
-          ## Rebuild it yourself (optional)
-
-          This release is reproducible: building commit \`$GITHUB_SHA\` with $XCODE gives an app with digest \`$APP_DIGEST\` (built on macOS $MACOS). Compare with \`scripts/app-digest.sh\`; the full file list is attached. Everything matches exactly except the pixels of the app icon's pre-rendered pictures, which are compared by name and size.
-          EOF
-          gh release create "v$VERSION" \
-            "build/$NAME" "build/$NAME.sha256" "build/Reelmark-$VERSION-app-digest.txt" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Reelmark $VERSION" \
-            --notes-file build/notes.md \
-            --target "$GITHUB_SHA" \
-            --prerelease \
-            --generate-notes
-
-  mac-checklist:
-    name: Open the Mac checklist
-    needs: [plan, release]
-    # Some checks need a person on a real Mac. This gathers the "Check on a
-    # Mac" boxes from the release's pull requests into one issue to tick off.
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      issues: write # open the checklist issue
-      pull-requests: read # read the pull requests' checks
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Open the checklist issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.plan.outputs.version }}
-        run: scripts/mac-checklist.sh "$VERSION"
-
-  verify:
-    name: Verify release
-    needs: [plan, release]
-    # A fresh machine runs the same checks users can run: checksum, signed
-    # build record, app contents, permissions, and a full rebuild from
-    # source that must give exactly the same app.
-    runs-on: xcode-27
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Verify, including a rebuild from source
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.plan.outputs.version }}
-        run: scripts/verify-release.sh "$VERSION" --rebuild
+    secrets:
+      app-id: ${{ secrets.SYNC_APP_ID }}
+      app-key: ${{ secrets.SYNC_APP_KEY }}
