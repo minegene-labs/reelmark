@@ -342,6 +342,36 @@ final class FilmfoldUITests: XCTestCase {
     }
 
     @MainActor
+    func testSidebarNarrowsTheListByStatus() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        sidebarEntry("Needs Attention", in: app).click()
+        waitForItems([Self.unmatched], in: app)
+        sidebarEntry("In Library", in: app).click()
+        waitForItems(Self.copied, in: app)
+        sidebarEntry("Movies", in: app).click()
+        waitForItems(Self.all, in: app)
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    func testViewMenuHidesTheSidebar() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        app.menuBars.menuBarItems["View"].click()
+        XCTAssertTrue(app.menuItems["Hide Sidebar"].waitForExistence(timeout: 10), "No Hide Sidebar")
+        app.typeKey(.escape, modifierFlags: [])
+        assertStillRunning(app)
+    }
+
+    @MainActor
+    private func sidebarEntry(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        let entry = app.outlines.staticTexts[name].firstMatch
+        if !entry.waitForExistence(timeout: 10) { print(app.debugDescription) }
+        return entry
+    }
+
+    @MainActor
     func testRightClickOffersShowInFinder() {
         let app = launch()
         waitForItems(Self.all, in: app)

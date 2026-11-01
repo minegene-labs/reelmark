@@ -44,6 +44,26 @@ final class LibraryModel {
         var fileName: String { source.lastPathComponent }
         var matchName: String { match?.displayName ?? "" }
         var newName: String { newPath ?? "" }
+        /// What the sidebar filters and counts the item by.
+        var sidebarSubject: SidebarFilter.Subject {
+            let season: Int? =
+                switch parsed.kind {
+                case .episode(let season, _): season
+                case .movie: nil
+                }
+            let show = match?.kind == .show ? match : nil
+            let state: SidebarFilter.State =
+                switch status {
+                case .noMatch, .failed: .needsAttention
+                case .ready: .ready
+                case .done: .inLibrary
+                case .pending, .searching: .lookingUp
+                }
+            return SidebarFilter.Subject(
+                isEpisode: parsed.isEpisode, showID: show?.id, showName: show?.displayName, season: season,
+                state: state)
+        }
+
         /// Items that need attention first, then waiting, then done.
         var statusRank: Int {
             switch status {

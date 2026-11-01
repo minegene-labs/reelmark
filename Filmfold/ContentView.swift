@@ -14,6 +14,8 @@ struct ContentView: View {
     /// The toolbar's search field, which narrows the list as in Activity
     /// Monitor. It only hides rows: Copy to Library still files every match.
     @State private var searchText = ""
+    /// The sidebar entry narrowing the list, together with the search.
+    @State private var sidebar: SidebarFilter? = .all
     @FocusState private var isSearchFocused: Bool
 
     // The window is built in a few small pieces rather than one long chain
@@ -29,6 +31,7 @@ struct ContentView: View {
             // seen.
             .onChange(of: model.items.count) { forgetHiddenSelection() }
             .onChange(of: searchText) { forgetHiddenSelection() }
+            .onChange(of: sidebar) { forgetHiddenSelection() }
             // Select the first of newly added files, as Finder does with
             // pasted ones (the list scrolls to it), unless the search hides it.
             .onChange(of: model.firstAdded) { selectFirstAdded() }
@@ -59,24 +62,29 @@ struct ContentView: View {
     /// drop target and the menu bar's commands.
     private func windowContent(_ shown: [LibraryModel.Item]) -> some View {
         @Bindable var model = model
-        return listArea(shown)
-            .toolbar { toolbar }
-            .searchable(text: $searchText, placement: .toolbar, prompt: "Search")
-            .searchFocused($isSearchFocused)
-            .navigationSubtitle(itemCount(showing: shown.count))
-            // The menu bar's commands (see Commands.swift), offered only while
-            // no sheet is open.
-            .focusedSceneValue(\.listCommands, listCommands)
-            .dropDestination(for: URL.self) { urls, _ in
-                model.add(urls)
-                return true
-            }
-            .fileImporter(
-                isPresented: $model.isImporting, allowedContentTypes: [.folder, .item],
-                allowsMultipleSelection: true
-            ) { result in
-                if case .success(let urls) = result { model.add(urls) }
-            }
+        return NavigationSplitView {
+            Sidebar(model: model, selection: $sidebar)
+                .navigationSplitViewColumnWidth(min: 160, ideal: 200)
+        } detail: {
+            listArea(shown)
+        }
+        .toolbar { toolbar }
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search")
+        .searchFocused($isSearchFocused)
+        .navigationSubtitle(itemCount(showing: shown.count))
+        // The menu bar's commands (see Commands.swift), offered only while
+        // no sheet is open.
+        .focusedSceneValue(\.listCommands, listCommands)
+        .dropDestination(for: URL.self) { urls, _ in
+            model.add(urls)
+            return true
+        }
+        .fileImporter(
+            isPresented: $model.isImporting, allowedContentTypes: [.folder, .item],
+            allowsMultipleSelection: true
+        ) { result in
+            if case .success(let urls) = result { model.add(urls) }
+        }
     }
 
     private func listArea(_ shown: [LibraryModel.Item]) -> some View {
@@ -191,20 +199,26 @@ struct ContentView: View {
         searchingFor = id
     }
 
-    /// The items the search finds, or all of them when nothing is typed.
+    private var filter: SidebarFilter { sidebar ?? .all }
+
+    /// The items the sidebar entry and the search both find, or all of them
+    /// when All is chosen and nothing is typed.
     private var shownItems: [LibraryModel.Item] {
         let search = ListSearch(searchText)
-        guard !search.isEmpty else { return model.items }
-        return model.items.filter { search.matches([$0.fileName, $0.matchName, $0.newName]) }
+        let filter = filter
+        guard !search.isEmpty || filter != .all else { return model.items }
+        return model.items.filter {
+            filter.includes($0.sidebarSubject) && search.matches([$0.fileName, $0.matchName, $0.newName])
+        }
     }
 
     /// "1,234 items" under the window title, so a long list's size is clear,
-    /// or "3 of 1,234 items" while searching.
+    /// or "3 of 1,234 items" while searching or narrowed by the sidebar.
     private func itemCount(showing shownCount: Int) -> String {
         let count = model.items.count
         guard count > 0 else { return "" }
         let total = count == 1 ? "1 item" : "\(count.formatted()) items"
-        guard !ListSearch(searchText).isEmpty else { return total }
+        guard !ListSearch(searchText).isEmpty || filter != .all else { return total }
         return "\(shownCount.formatted()) of \(total)"
     }
 
@@ -234,6 +248,55 @@ struct ContentView: View {
     private var primaryActionTitle: String {
         let verb = model.mode == .copy ? "Copy" : "Move"
         return model.readyCount > 0 ? "\(verb) \(model.readyCount) to Library" : "\(verb) to Library"
+    }
+}
+
+// MARK: - Sidebar
+
+/// A source list like Finder's: the kinds of video, each matched show and
+/// its seasons, and each status, with how many items each holds.
+private struct Sidebar: View {
+    let model: LibraryModel
+    @Binding var selection: SidebarFilter?
+
+    var body: some View {
+        let summary = SidebarSummary(model.items.lazy.map(\.sidebarSubject))
+        List(selection: $selection) {
+            Section("Library") {
+                row("All", symbol: "tray.full", .all, in: summary)
+                row("Movies", symbol: "film", .movies, in: summary)
+                DisclosureGroup {
+                    ForEach(summary.shows) { show in
+                        DisclosureGroup {
+                            ForEach(show.seasons, id: \.self) { season in
+                                row(
+                                    season == 0 ? "Specials" : "Season \(season)", symbol: "rectangle.stack",
+                                    .season(showID: show.id, season: season), in: summary)
+                            }
+                        } label: {
+                            row(show.name, symbol: "tv", .show(id: show.id), in: summary)
+                        }
+                    }
+                } label: {
+                    row("TV Shows", symbol: "tv", .shows, in: summary)
+                }
+            }
+            Section("Status") {
+                row("Needs Attention", symbol: "exclamationmark.triangle", .needsAttention, in: summary)
+                row("Ready", symbol: "arrow.right.circle", .ready, in: summary)
+                row("In Library", symbol: "checkmark.circle", .inLibrary, in: summary)
+            }
+        }
+        .listStyle(.sidebar)
+    }
+
+    /// An entry with its count, which is left out when it's zero, as Mail does.
+    private func row(
+        _ title: String, symbol: String, _ filter: SidebarFilter, in summary: SidebarSummary
+    ) -> some View {
+        Label(title, systemImage: symbol)
+            .badge(summary.count(filter))
+            .tag(Optional(filter))
     }
 }
 
