@@ -14,7 +14,8 @@
 ## Git
 - Branch `<type>/<issue>-<slug>`. One PR per issue.
 - PR title in Conventional Commits (`feat:`, `fix:`, `chore:`). Body: one line + `Closes #<n>`.
-- Never push to `main`, merge, tag, release or edit workflows, rulesets or settings.
+- Never push to `main`, tag, release or edit workflows, rulesets or settings.
+- Merge a PR only when asked, once its required checks pass, by squash merge.
 
 ## GitHub
 - After opening the PR, stop. Do not watch, poll or re-run CI.
