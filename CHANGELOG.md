@@ -2,6 +2,18 @@
 
 All notable changes to Reelmark are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reelmark uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Each release's download, checksum and verification details are on the [Releases](https://github.com/MineGene/reelmark/releases) page.
 
+## [0.3.0](https://github.com/minegene-labs/reelmark/compare/v0.2.0...v0.3.0) (2026-11-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* the new bundle ID means saved library folders and the TMDB token from Reelmark don't carry over.
+
+### Features
+
+* drag rows out of the list into Finder ([#93](https://github.com/minegene-labs/reelmark/issues/93)) ([6ab138f](https://github.com/minegene-labs/reelmark/commit/6ab138fed324b1e306fe885dfa6710b163d36478)), closes [#62](https://github.com/minegene-labs/reelmark/issues/62)
+* rename the app to Filmfold ([#90](https://github.com/minegene-labs/reelmark/issues/90)) ([33e2abf](https://github.com/minegene-labs/reelmark/commit/33e2abf8c963ef717b21f65f08d86f5039570253))
+
 ## [0.2.0](https://github.com/minegene-labs/reelmark/compare/v0.1.20...v0.2.0) (2026-11-01)
 
 
