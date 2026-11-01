@@ -332,6 +332,16 @@ final class FilmfoldUITests: XCTestCase {
     }
 
     @MainActor
+    func testDraggingARowOntoTheListAddsNothing() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        item(Self.ready, in: app).press(forDuration: 0.5, thenDragTo: item(Self.unmatched, in: app))
+        waitForItems(Self.all, in: app)
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "value == %@", Self.ready)).count, 1)
+        assertStillRunning(app)
+    }
+
+    @MainActor
     func testRightClickOffersShowInFinder() {
         let app = launch()
         waitForItems(Self.all, in: app)
