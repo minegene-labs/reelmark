@@ -10,8 +10,7 @@ public enum IssueLink {
         case bug, feature
     }
 
-    /// The only web address in the app besides TMDB's; scripts/check-app.sh
-    /// allows exactly this.
+    /// The only web address in the app besides TMDB's.
     public static let newIssue = "https://github.com/MineGene/reelmark/issues/new"
 
     /// Browsers and GitHub cope with addresses up to about 8,000 characters,

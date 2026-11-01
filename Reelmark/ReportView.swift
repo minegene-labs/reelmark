@@ -19,9 +19,10 @@ struct ReportView: View {
             Text(
                 "Reelmark will open a new issue on GitHub in your browser, with these details filled in. "
                     + "Nothing is sent until you submit it there, and you can change anything first. "
-                    + "File names, folders and tokens are never included.")
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                    + "File names, folders and tokens are never included."
+            )
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
             ScrollView {
                 Text(details)
                     .textSelection(.enabled)
