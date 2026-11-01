@@ -52,10 +52,13 @@ The *Commit privacy* check enforces the email and trailer rules on every pull re
 Requires Apple silicon and the Xcode version in `.xcode-version`.
 
 ```sh
-scripts/build-app.sh                 # builds build/Release/Reelmark.app
-scripts/check-app.sh build/Release/Reelmark.app
+xcodebuild -project Reelmark.xcodeproj -scheme Reelmark -configuration Release -derivedDataPath build build
+open build/Build/Products/Release/Reelmark.app
 swift test --package-path Packages/ReelmarkCore
+xcodebuild -project Reelmark.xcodeproj -scheme Reelmark test
 ```
+
+The first two lines build and open the app, the third runs the core tests and the last runs the UI tests as well.
 
 ## Trying the app by hand
 
@@ -77,6 +80,6 @@ Reelmark follows established, public practices at each stage, so the process can
 6. **Promote.** Every Monday morning (Queensland time), the *Promote release* workflow makes the newest checked pre-release the stable release: one whose checklist issue is closed, along with those of every pre-release before it. The build isn't changed, only its label. An urgent fix can be promoted at once: **Actions › Promote release › Run workflow** with its version.
 7. **Respond.** Security problems are reported privately (see [SECURITY.md](SECURITY.md)) and fixed in the latest release.
 
-What changed in each version is recorded in [CHANGELOG.md](CHANGELOG.md). If your change affects what people see or can do, don't edit CHANGELOG.md: add a small file to [changelog.d](changelog.d) named after your branch, as its README describes. Separate files keep open pull requests from conflicting with each other. The release notes list the new entries, and they move into CHANGELOG.md in the first pull request after the release (`scripts/changelog.sh collect`).
+What changed in each version is recorded in [CHANGELOG.md](CHANGELOG.md). Don't edit it by hand: each release's entries are written from the [Conventional Commits](https://www.conventionalcommits.org) titles of the pull requests it contains (`feat:` for features, `fix:` for fixes), so give your pull request a title that says what changed for the person using the app. A fix for a security problem says so in its title.
 
 Changes to docs, tests or CI alone don't make a release. A nightly run also checks `main`, in case a merge didn't start one. For a different version number (for example `1.0.0`): **Actions › Release › Run workflow**, keep the branch on `main`, and enter the version.
