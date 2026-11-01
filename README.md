@@ -37,7 +37,7 @@ The TMDB id in each folder name tells Jellyfin exactly which title it is, so rem
 
 ## Install
 
-1. Download the DMG from the [latest release](https://github.com/MineGene/reelmark/releases/latest), open it and drag Filmfold to Applications. (Newer versions marked *Pre-release* on the Releases page haven't been checked on a Mac yet; the latest release has.)
+1. Download the zip from the [latest release](https://github.com/MineGene/reelmark/releases/latest), open it and drag Filmfold to Applications.
 2. Filmfold is free and isn't notarised by Apple (that needs a paid developer account), so macOS blocks it until you say you trust this copy. Open **Terminal**, run this once, then open Filmfold as usual:
 
    ```sh
@@ -94,7 +94,6 @@ They run inside Filmfold, so nothing more leaves your Mac than when you use the 
 - **Bug reports are yours to send:** **Help › Report a Bug…** shows exactly what it would share (versions, your Mac's model, settings, how many items are in the list, and summaries of recent crashes) and opens a pre-filled GitHub issue in your browser only if you choose to. File names, folders and tokens are never included.
 - **Sandboxed:** Filmfold can only touch the files you add and the two library folders you choose.
 - **Declared the standard way:** Filmfold includes Apple's privacy manifest, which states that it doesn't track you and collects no data.
-- **Checked automatically:** every build is tested for the exact permissions and for TMDB being the only web address in the app.
 
 Filmfold comes with its own read-only TMDB access token. It's public on purpose, as any key inside an open-source app would be. If you'd rather use your own, paste the **API Read Access Token** from your [TMDB account](https://www.themoviedb.org/settings/api) into Settings; it's stored in your Keychain.
 
@@ -123,7 +122,7 @@ No. Filmfold never checks for updates, so new versions are on the [Releases](htt
 
 ## How it's made
 
-Filmfold is written almost entirely by Claude, Anthropic's AI, through Claude Code, with the maintainer setting the direction and testing on a real Mac. Claude's commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), so they're easy to tell apart from the maintainer's. Nothing is built on a personal machine: GitHub Actions builds, tests and releases every version. Every change is checked automatically for permissions, web addresses, commit privacy, reproducibility and code scanning.
+Filmfold is written almost entirely by Claude, Anthropic's AI, through Claude Code, with the maintainer setting the direction and testing on a real Mac. Claude's commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), so they're easy to tell apart from the maintainer's. Nothing is built on a personal machine: GitHub Actions builds, tests and releases every version. Every change is checked automatically for formatting and by the tests, and the app is built from scratch.
 
 ## Contributing and security
 

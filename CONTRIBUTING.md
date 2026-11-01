@@ -42,7 +42,7 @@ The *Commit privacy* check enforces the email and trailer rules on every pull re
 
 1. Branch from `main`; one change per pull request.
 2. Write commit messages the way Git itself asks: a short subject in the imperative ("Fix crash when clearing the list"), a blank line, then what the problem was and why this fixes it. Fill in the pull request template's sections. The history should make sense to someone who reads it years later.
-3. Push and open a pull request. CI builds the app, runs the tests, checks permissions, web addresses and commit privacy, and runs CodeQL. Nothing needs a Mac except trying the app. A pull request that changes nothing the app or its tests use (docs, the changelog, other scripts and workflows) skips the macOS jobs, which then show as passed; `scripts/ci-changes.sh` lists what counts.
+3. Push and open a pull request. CI checks the formatting with `swift format lint`, runs the core tests and builds the app. Nothing needs a Mac except trying the app and running the UI tests.
 4. Pull requests from the maintainer and from MachineGene (Claude's) are squash-merged automatically once every required check passes: auto-merge is turned on as each one is opened. Pull requests from forks and Dependabot are merged by hand. The maintainer can still review, hold (turn off auto-merge) or close any pull request.
 
 `main` is protected: no direct pushes, force pushes or deletions.
@@ -52,10 +52,13 @@ The *Commit privacy* check enforces the email and trailer rules on every pull re
 Requires Apple silicon and the Xcode version in `.xcode-version`.
 
 ```sh
-scripts/build-app.sh                 # builds build/Release/Filmfold.app
-scripts/check-app.sh build/Release/Filmfold.app
+xcodebuild -project Filmfold.xcodeproj -scheme Filmfold -configuration Release -derivedDataPath build build
+open build/Build/Products/Release/Filmfold.app
 swift test --package-path Packages/FilmfoldCore
+xcodebuild -project Filmfold.xcodeproj -scheme Filmfold test
 ```
+
+The first two lines build and open the app, the third runs the core tests and the last runs the UI tests as well.
 
 ## Trying the app by hand
 
@@ -63,20 +66,23 @@ swift test --package-path Packages/FilmfoldCore
 
 ## Rules the code must keep
 
-See the "Rules the design depends on" section of `CLAUDE.md`: what may be sent and where, the fixed entitlements, never overwriting or deleting, the built-in token and the Keychain for a person's own, a tiny memory footprint, Apple's standard controls, and no third-party code.
+- Only a title and year leave the Mac, and only to TMDB's API.
+- The sandbox entitlements stay as they are: network client, user-selected files and app-scoped bookmarks.
+- Never overwrite or delete a person's files.
+- The built-in TMDB token stays read-only; a person's own token goes in the Keychain.
+- Keep memory use tiny, use Apple's standard controls, and add no third-party code.
 
 ## From idea to release
 
 Filmfold follows established, public practices at each stage, so the process can be checked rather than taken on trust:
 
 1. **Design.** Every change starts as an issue: a bug report, a feature request, or a short proposal for anything larger, saying the problem and the intended approach before code is written. Ideas are weighed against "What Filmfold is, and isn't" above and Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/).
-2. **Code.** [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow): a short-lived branch from `main`, one change per pull request, with tests, a changelog entry and the README and other docs updated in the same pull request. Commit messages follow [Git's own guidelines](https://git-scm.com/docs/SubmittingPatches).
-3. **Review and build.** Every pull request is built and tested by GitHub Actions (core tests, UI tests, the app checks, CodeQL, a reproducibility check, commit privacy and a workflow security audit) and reviewed by CodeRabbit (settings in `.coderabbit.yaml`). `main` only accepts pull requests whose required checks pass.
-4. **Release.** Merging a change to the app publishes the next version straight away as a **pre-release**, built only by GitHub Actions, reproducibly, with a signed build record ([release engineering](https://sre.google/sre-book/release-engineering/) in Google's sense: automated, hermetic and repeatable). Version numbers follow [Semantic Versioning](https://semver.org): a release whose changelog entries add or change features gets the next minor version (0.2.0), one with only fixes the next patch version (0.1.1). And [CHANGELOG.md](CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com).
-5. **Test on a Mac.** Checks that only a person on a real Mac can do (a real drag from Finder, chosen library folders, how something looks or sounds) are listed as checkboxes in each pull request's "Check on a Mac" section, each saying why it can't be automated. Anything a test can check is a test instead. The release collects them into a "Check <version> on a Mac" issue. A failed check becomes its own bug report.
-6. **Promote.** Every Monday morning (Queensland time), the *Promote release* workflow makes the newest checked pre-release the stable release: one whose checklist issue is closed, along with those of every pre-release before it. The build isn't changed, only its label. An urgent fix can be promoted at once: **Actions › Promote release › Run workflow** with its version.
-7. **Respond.** Security problems are reported privately (see [SECURITY.md](SECURITY.md)) and fixed in the latest release.
+2. **Code.** [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow): a short-lived branch from `main`, one change per pull request, with tests for any new or changed logic and the README and other docs updated in the same pull request. Commit messages follow [Git's own guidelines](https://git-scm.com/docs/SubmittingPatches).
+3. **Review and build.** Every pull request is checked by GitHub Actions (formatting, core tests and an app build) and OpenSSF Scorecard checks the repository weekly. `main` only accepts pull requests whose required checks pass.
+4. **Release.** [release-please](https://github.com/googleapis/release-please) keeps a release pull request open with the next version and its changelog. Merging it tags the version, and GitHub Actions builds the app, attaches the zip, its SHA-256 checksum and a signed build record, and publishes the release ([release engineering](https://sre.google/sre-book/release-engineering/) in Google's sense: automated and repeatable). Version numbers follow [Semantic Versioning](https://semver.org): a release with a `feat:` change gets the next minor version (0.2.0), one with only `fix:` changes the next patch version (0.1.1).
+5. **Test on a Mac.** Checks that only a person on a real Mac can do (a real drag from Finder, chosen library folders, how something looks or sounds) are tried by the maintainer before the release pull request is merged. Anything a test can check is a test instead. A failed check becomes its own bug report.
+6. **Respond.** Security problems are reported privately (see [SECURITY.md](SECURITY.md)) and fixed in the latest release.
 
-What changed in each version is recorded in [CHANGELOG.md](CHANGELOG.md). If your change affects what people see or can do, don't edit CHANGELOG.md: add a small file to [changelog.d](changelog.d) named after your branch, as its README describes. Separate files keep open pull requests from conflicting with each other. The release notes list the new entries, and they move into CHANGELOG.md in the first pull request after the release (`scripts/changelog.sh collect`).
+What changed in each version is recorded in [CHANGELOG.md](CHANGELOG.md). Don't edit it by hand: each release's entries are written from the [Conventional Commits](https://www.conventionalcommits.org) titles of the pull requests it contains (`feat:` for features, `fix:` for fixes), so give your pull request a title that says what changed for the person using the app. A fix for a security problem says so in its title.
 
-Changes to docs, tests or CI alone don't make a release. A nightly run also checks `main`, in case a merge didn't start one. For a different version number (for example `1.0.0`): **Actions › Release › Run workflow**, keep the branch on `main`, and enter the version.
+Changes to docs, tests or CI alone (`docs:`, `test:`, `ci:`, `chore:`) don't make a release.
