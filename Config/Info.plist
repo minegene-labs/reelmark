@@ -2,14 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <!--
-  The parts of Reelmark's Info.plist that build settings can't express.
+  The parts of Filmfold's Info.plist that build settings can't express.
   Xcode merges this with the generated keys (GENERATE_INFOPLIST_FILE).
 
-  CFBundleDocumentTypes: Reelmark can open videos and folders, so they
+  CFBundleDocumentTypes: Filmfold can open videos and folders, so they
   can be dropped on its Dock icon and it appears under Finder's Open With.
   "Alternate" means it never becomes the default app for videos.
 
-  NSServices: "Add to Reelmark" in Finder's right-click Services menu.
+  NSServices: "Add to Filmfold" in Finder's right-click Services menu.
 -->
 <dict>
 	<key>CFBundleDocumentTypes</key>
@@ -45,7 +45,7 @@
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>Add to Reelmark</string>
+				<string>Add to Filmfold</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>addFiles</string>

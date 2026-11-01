@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for thinking about helping with Reelmark. Every bug report, idea and fix makes it better for everyone who keeps a Jellyfin library on a Mac.
+Thanks for thinking about helping with Filmfold. Every bug report, idea and fix makes it better for everyone who keeps a Jellyfin library on a Mac.
 
-Reelmark handles people's media libraries and sends data to an online service, so privacy and safety come first. Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Filmfold handles people's media libraries and sends data to an online service, so privacy and safety come first. Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Ways to help
 
-- **Report a bug:** use the [bug report form](https://github.com/MineGene/reelmark/issues/new?template=bug.yml). For a file Reelmark matched wrongly, a made-up name in the same style is enough.
+- **Report a bug:** use the [bug report form](https://github.com/MineGene/reelmark/issues/new?template=bug.yml). For a file Filmfold matched wrongly, a made-up name in the same style is enough.
 - **Suggest a feature:** use the [feature request form](https://github.com/MineGene/reelmark/issues/new?template=feature.yml), or talk an idea through first in [Discussions](https://github.com/MineGene/reelmark/discussions).
 - **Try new releases** on your own Mac and say what you find. Different Macs, macOS versions and library layouts all help.
 - **Improve the docs:** the README, this guide and the in-app text should be clear to someone who has never used a terminal.
@@ -14,26 +14,26 @@ Reelmark handles people's media libraries and sends data to an online service, s
 
 Questions go in [Discussions](https://github.com/MineGene/reelmark/discussions); see [SUPPORT.md](SUPPORT.md).
 
-## What Reelmark is, and isn't
+## What Filmfold is, and isn't
 
-Reelmark does one job: it names movies and TV episodes the way Jellyfin expects and files them into a library, privately and without fuss. It aims to feel like a part of macOS.
+Filmfold does one job: it names movies and TV episodes the way Jellyfin expects and files them into a library, privately and without fuss. It aims to feel like a part of macOS.
 
 So some ideas, however good, won't fit, and the maintainer will say so kindly and explain why:
 
 - Anything that sends more than a title and year off the Mac, or talks to any service but TMDB.
 - Downloading artwork, subtitles or metadata files, which Jellyfin already does.
 - Other media servers' naming schemes, music, or books.
-- Third-party code, custom-styled controls, or features that keep Reelmark running in the background.
+- Third-party code, custom-styled controls, or features that keep Filmfold running in the background.
 
 ## Who decides
 
-Reelmark has one maintainer, who sets its direction, tests on a real Mac and approves releases. Most code is written by Claude through Claude Code, openly; its commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), the maintainer's bot account for AI-written work. Decisions and their reasons are written down in issues and pull requests, so anyone can follow them. The maintainer aims to reply to new issues and pull requests within a week.
+Filmfold has one maintainer, who sets its direction, tests on a real Mac and approves releases. Most code is written by Claude through Claude Code, openly; its commits, pull requests and comments come from [MachineGene](https://github.com/MachineGene), the maintainer's bot account for AI-written work. Decisions and their reasons are written down in issues and pull requests, so anyone can follow them. The maintainer aims to reply to new issues and pull requests within a week.
 
 ## Privacy rules
 
-- **Never commit, attach or paste personal files**, real download names from your own library, or your own TMDB token. (The built-in token in `Reelmark/TMDBKey.swift` is Reelmark's and public on purpose.) Tests use invented release names and empty placeholder files.
+- **Never commit, attach or paste personal files**, real download names from your own library, or your own TMDB token. (The built-in token in `Filmfold/TMDBKey.swift` is Filmfold's and public on purpose.) Tests use invented release names and empty placeholder files.
 - **Commit with your GitHub no-reply email.** Turn on *Keep my email addresses private* at [github.com/settings/emails](https://github.com/settings/emails), then `git config user.email "<id>+<username>@users.noreply.github.com"`.
-- **Say when AI wrote it.** Much of Reelmark is written by Claude through Claude Code, and that's stated openly. If an AI tool wrote or substantially shaped your change, say so in the pull request and add a `Co-authored-by:` line for it.
+- **Say when AI wrote it.** Much of Filmfold is written by Claude through Claude Code, and that's stated openly. If an AI tool wrote or substantially shaped your change, say so in the pull request and add a `Co-authored-by:` line for it.
 - Commit trailers are limited to `Signed-off-by`, `Co-authored-by`, `Fixes`, `Closes`, `Resolves`, `Refs` and `Claude-Session`. Any email in them must be a GitHub no-reply address or `noreply@anthropic.com`.
 
 The *Commit privacy* check enforces the email and trailer rules on every pull request.
@@ -52,14 +52,14 @@ The *Commit privacy* check enforces the email and trailer rules on every pull re
 Requires Apple silicon and the Xcode version in `.xcode-version`.
 
 ```sh
-scripts/build-app.sh                 # builds build/Release/Reelmark.app
-scripts/check-app.sh build/Release/Reelmark.app
-swift test --package-path Packages/ReelmarkCore
+scripts/build-app.sh                 # builds build/Release/Filmfold.app
+scripts/check-app.sh build/Release/Filmfold.app
+swift test --package-path Packages/FilmfoldCore
 ```
 
 ## Trying the app by hand
 
-`scripts/make-test-downloads.sh` makes a folder of empty files named like downloads: free-to-show films for screenshots, and made-up names that try to break things (thousands of episodes, odd names, files that must be skipped, link loops). Reelmark only reads file names, so empty files behave exactly like real ones. `--count 100000` makes a data hoarder's folder, spread over up to 500 made-up shows so it still needs only a few hundred TMDB searches. Run it with `--help` for options.
+`scripts/make-test-downloads.sh` makes a folder of empty files named like downloads: free-to-show films for screenshots, and made-up names that try to break things (thousands of episodes, odd names, files that must be skipped, link loops). Filmfold only reads file names, so empty files behave exactly like real ones. `--count 100000` makes a data hoarder's folder, spread over up to 500 made-up shows so it still needs only a few hundred TMDB searches. Run it with `--help` for options.
 
 ## Rules the code must keep
 
@@ -67,9 +67,9 @@ See the "Rules the design depends on" section of `CLAUDE.md`: what may be sent a
 
 ## From idea to release
 
-Reelmark follows established, public practices at each stage, so the process can be checked rather than taken on trust:
+Filmfold follows established, public practices at each stage, so the process can be checked rather than taken on trust:
 
-1. **Design.** Every change starts as an issue: a bug report, a feature request, or a short proposal for anything larger, saying the problem and the intended approach before code is written. Ideas are weighed against "What Reelmark is, and isn't" above and Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/).
+1. **Design.** Every change starts as an issue: a bug report, a feature request, or a short proposal for anything larger, saying the problem and the intended approach before code is written. Ideas are weighed against "What Filmfold is, and isn't" above and Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/).
 2. **Code.** [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow): a short-lived branch from `main`, one change per pull request, with tests, a changelog entry and the README and other docs updated in the same pull request. Commit messages follow [Git's own guidelines](https://git-scm.com/docs/SubmittingPatches).
 3. **Review and build.** Every pull request is built and tested by GitHub Actions (core tests, UI tests, the app checks, CodeQL, a reproducibility check, commit privacy and a workflow security audit) and reviewed by CodeRabbit (settings in `.coderabbit.yaml`). `main` only accepts pull requests whose required checks pass.
 4. **Release.** Merging a change to the app publishes the next version straight away as a **pre-release**, built only by GitHub Actions, reproducibly, with a signed build record ([release engineering](https://sre.google/sre-book/release-engineering/) in Google's sense: automated, hermetic and repeatable). Version numbers follow [Semantic Versioning](https://semver.org): a release whose changelog entries add or change features gets the next minor version (0.2.0), one with only fixes the next patch version (0.1.1). And [CHANGELOG.md](CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com).

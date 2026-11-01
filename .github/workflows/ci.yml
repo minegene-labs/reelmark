@@ -14,9 +14,9 @@ jobs:
   swift:
     uses: minegene-labs/workflows/.github/workflows/swift-ci.yml@v1.1.0
     with:
-      scheme: Reelmark
-      core-path: Packages/ReelmarkCore
-      lint-paths: Reelmark Packages/ReelmarkCore
+      scheme: Filmfold
+      core-path: Packages/FilmfoldCore
+      lint-paths: Filmfold Packages/FilmfoldCore
       linux: false
       xcodegen: false
       macos-runner: xcode-27
