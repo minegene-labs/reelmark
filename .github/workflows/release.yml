@@ -14,7 +14,7 @@ jobs:
   release:
     uses: minegene-labs/workflows/.github/workflows/release.yml@v1.1.0
     with:
-      scheme: Reelmark
+      scheme: Filmfold
       xcodegen: false
       macos-runner: xcode-27
     permissions:
