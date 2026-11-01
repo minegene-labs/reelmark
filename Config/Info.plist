@@ -10,8 +10,15 @@
   "Alternate" means it never becomes the default app for videos.
 
   NSServices: "Add to Filmfold" in Finder's right-click Services menu.
+
+  CFBundleHelpBook*: Help › Filmfold Help opens Filmfold.help, which is
+  bundled with the app and works offline.
 -->
 <dict>
+	<key>CFBundleHelpBookFolder</key>
+	<string>Filmfold.help</string>
+	<key>CFBundleHelpBookName</key>
+	<string>com.minegene.filmfold.help</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
