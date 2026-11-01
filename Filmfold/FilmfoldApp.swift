@@ -74,6 +74,8 @@ struct FilmfoldApp: App {
                 Button("About Filmfold") { AboutPanel.show() }
             }
             FilmfoldCommands(model: model)
+            // View › Hide Sidebar (Control-Command-S), as in Finder.
+            SidebarCommands()
         }
 
         Settings {
