@@ -2,6 +2,14 @@
 
 All notable changes to Reelmark are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reelmark uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Each release's download, checksum and verification details are on the [Releases](https://github.com/MineGene/reelmark/releases) page.
 
+## [0.5.0](https://github.com/minegene-labs/reelmark/compare/v0.4.0...v0.5.0) (2026-11-01)
+
+
+### Features
+
+* add a Finder-like sidebar ([#98](https://github.com/minegene-labs/reelmark/issues/98)) ([6b829b1](https://github.com/minegene-labs/reelmark/commit/6b829b13b46d0bc408274f2b79c2981928dfae96)), closes [#64](https://github.com/minegene-labs/reelmark/issues/64)
+* add a Help book ([#96](https://github.com/minegene-labs/reelmark/issues/96)) ([c636675](https://github.com/minegene-labs/reelmark/commit/c6366758e7146ecca878fb4ab55a18618a3a8072)), closes [#65](https://github.com/minegene-labs/reelmark/issues/65)
+
 ## [0.4.0](https://github.com/minegene-labs/reelmark/compare/v0.3.0...v0.4.0) (2026-11-01)
 
 
