@@ -86,10 +86,11 @@ struct ContentView: View {
             } else {
                 ItemList(
                     model: model, items: shown, selection: $selection, reveal: model.firstAdded,
-                    onSearch: searchAgain)
-                    .overlay {
-                        if shown.isEmpty { ContentUnavailableView.search(text: searchText) }
-                    }
+                    onSearch: searchAgain
+                )
+                .overlay {
+                    if shown.isEmpty { ContentUnavailableView.search(text: searchText) }
+                }
             }
         }
         // Fill the window, so a drop anywhere in it counts, not just on the
