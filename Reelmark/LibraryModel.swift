@@ -535,13 +535,17 @@ final class LibraryModel {
     /// Shows the items in Finder, selected: a file already in the library
     /// where it is now, anything else where it was downloaded.
     func showInFinder(_ ids: Set<Item.ID>) {
-        let urls = items.filter { ids.contains($0.id) }.map { item in
-            guard item.status == .done, let match = item.match, let path = item.newPath,
-                let library = match.kind == .movie ? moviesFolder : showsFolder
-            else { return item.source }
-            return library.appending(path: path)
-        }
+        let urls = items.filter { ids.contains($0.id) }.map(location)
         if !urls.isEmpty { NSWorkspace.shared.activateFileViewerSelecting(urls) }
+    }
+
+    /// Where the item's file is now: in the library once it's there, else
+    /// where it was downloaded.
+    func location(of item: Item) -> URL {
+        guard item.status == .done, let match = item.match, let path = item.newPath,
+            let library = match.kind == .movie ? moviesFolder : showsFolder
+        else { return item.source }
+        return library.appending(path: path)
     }
 
     // MARK: - Settings

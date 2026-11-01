@@ -61,6 +61,9 @@ struct ReelmarkCommands: Commands {
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
             .disabled(list?.selection.isEmpty ?? true)
+            Button("Quick Look") { DeletingTableView.toggleQuickLook() }
+                .keyboardShortcut("y")
+                .disabled(list?.selection.isEmpty ?? true)
             Divider()
             Button("Remove from List") {
                 if let list { model.remove(list.selection) }

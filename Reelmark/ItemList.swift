@@ -1,4 +1,5 @@
 import AppKit
+import QuickLookUI
 import ReelmarkCore
 import SwiftUI
 
@@ -29,6 +30,7 @@ struct ItemList: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let table = DeletingTableView()
         table.onDelete = { [weak coordinator = context.coordinator] in coordinator?.removeSelection() }
+        table.previewController = context.coordinator
         table.style = .inset
         table.allowsMultipleSelection = true
         table.usesAlternatingRowBackgroundColors = true
@@ -89,7 +91,9 @@ struct ItemList: NSViewRepresentable {
     // MARK: - Table
 
     @MainActor
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
+    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate,
+        @preconcurrency QLPreviewPanelDataSource, @preconcurrency QLPreviewPanelDelegate
+    {
         var parent: ItemList
         weak var table: NSTableView?
         /// The items in the order shown (sorted by the clicked header, if any).
@@ -155,12 +159,57 @@ struct ItemList: NSViewRepresentable {
             guard !isSyncingSelection, let table else { return }
             parent.selection = Set(
                 table.selectedRowIndexes.compactMap { rows.indices.contains($0) ? rows[$0].id : nil })
+            if QLPreviewPanel.sharedPreviewPanelExists(), QLPreviewPanel.shared().isVisible {
+                QLPreviewPanel.shared().reloadData()
+            }
         }
 
         func removeSelection() {
             guard let table else { return }
             parent.model.remove(
                 Set(table.selectedRowIndexes.compactMap { rows.indices.contains($0) ? rows[$0].id : nil }))
+        }
+
+        // MARK: Quick Look
+
+        private var previewURLs: [URL] = []
+        private var libraryAccess: [URL] = []
+
+        /// The library folders are opened for the panel too, so files
+        /// already filed there can be previewed in the sandbox.
+        func beginPreview(_ panel: QLPreviewPanel) {
+            libraryAccess = [parent.model.moviesFolder, parent.model.showsFolder]
+                .compactMap { $0 }
+                .filter { $0.startAccessingSecurityScopedResource() }
+            panel.dataSource = self
+            panel.delegate = self
+            panel.reloadData()
+        }
+
+        func endPreview(_ panel: QLPreviewPanel) {
+            panel.dataSource = nil
+            panel.delegate = nil
+            for url in libraryAccess { url.stopAccessingSecurityScopedResource() }
+            libraryAccess = []
+        }
+
+        func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
+            guard let table else { return 0 }
+            previewURLs = table.selectedRowIndexes.compactMap {
+                rows.indices.contains($0) ? parent.model.location(of: rows[$0]) : nil
+            }
+            return previewURLs.count
+        }
+
+        func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> (any QLPreviewItem)! {
+            previewURLs.indices.contains(index) ? previewURLs[index] as NSURL : nil
+        }
+
+        /// Arrow keys pressed in the panel move through the list, as in Finder.
+        func previewPanel(_ panel: QLPreviewPanel!, handle event: NSEvent!) -> Bool {
+            guard let table, event.type == .keyDown else { return false }
+            table.keyDown(with: event)
+            return true
         }
 
         // MARK: Dropping files
@@ -319,16 +368,42 @@ struct ItemList: NSViewRepresentable {
 
 // MARK: - Table and cells
 
-/// Delete (or forward delete) removes the selected rows, as in Finder.
+/// Delete (or forward delete) removes the selected rows, and Space shows
+/// them in Quick Look, as in Finder.
 final class DeletingTableView: NSTableView {
     var onDelete: (() -> Void)?
+    weak var previewController: ItemList.Coordinator?
 
     override func keyDown(with event: NSEvent) {
         if event.specialKey == .delete || event.specialKey == .deleteForward {
             onDelete?()
+        } else if event.charactersIgnoringModifiers == " ", !selectedRowIndexes.isEmpty {
+            Self.toggleQuickLook()
         } else {
             super.keyDown(with: event)
         }
+    }
+
+    @MainActor static func toggleQuickLook() {
+        let panel = QLPreviewPanel.shared()!
+        if panel.isVisible {
+            panel.orderOut(nil)
+        } else {
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    // Quick Look calls these on the main thread, through the responder chain.
+    nonisolated override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool {
+        MainActor.assumeIsolated { previewController != nil }
+    }
+
+    nonisolated override func beginPreviewPanelControl(_ panel: QLPreviewPanel!) {
+        MainActor.assumeIsolated { previewController?.beginPreview(panel) }
+    }
+
+    nonisolated override func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
+        MainActor.assumeIsolated { previewController?.endPreview(panel) }
     }
 }
 

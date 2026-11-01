@@ -342,6 +342,19 @@ final class ReelmarkUITests: XCTestCase {
     }
 
     @MainActor
+    func testSpaceOpensQuickLook() {
+        let app = launch()
+        waitForItems(Self.all, in: app)
+        let windows = app.windows.count
+        item(Self.ready, in: app).click()
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(eventually { app.windows.count > windows }, "Quick Look didn't open")
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(eventually { app.windows.count == windows }, "Quick Look didn't close")
+        assertStillRunning(app)
+    }
+
+    @MainActor
     func testClearEmptiesTheWholeList() {
         let app = launch()
         waitForItems(Self.all, in: app)
