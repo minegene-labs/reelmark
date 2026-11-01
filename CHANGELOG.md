@@ -2,6 +2,13 @@
 
 All notable changes to Reelmark are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and Reelmark uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Each release's download, checksum and verification details are on the [Releases](https://github.com/MineGene/reelmark/releases) page.
 
+## [0.2.0](https://github.com/minegene-labs/reelmark/compare/v0.1.20...v0.2.0) (2026-11-01)
+
+
+### Features
+
+* preview the selected file with Quick Look ([#88](https://github.com/minegene-labs/reelmark/issues/88)) ([fff3105](https://github.com/minegene-labs/reelmark/commit/fff310565a9b24bd4db4b66a683077d57cc861a4)), closes [#61](https://github.com/minegene-labs/reelmark/issues/61)
+
 ## [Unreleased]
 
 Changes not yet released are in [changelog.d](changelog.d), one file per pull request. They move here once they're released.
